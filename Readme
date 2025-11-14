@@ -1,5 +1,169 @@
 This project was made just to understand the python language better.
 
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Trend Trading Bot Simulator</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #181a1b;
+        color: #e8e6e3;
+        margin: 20px;
+    }
+    #chart {
+        width: 100%;
+        height: 350px;
+        background: #222;
+        border: 1px solid #444;
+        margin-bottom: 20px;
+    }
+    #log {
+        white-space: pre-wrap;
+        background: #111;
+        border: 1px solid #444;
+        padding: 10px;
+        height: 200px;
+        overflow-y: auto;
+    }
+</style>
+</head>
+<body>
+
+<h1>Trend-Following Bot Simulator</h1>
+<canvas id="chart"></canvas>
+<div id="log"></div>
+
+<script>
+// ----------- MARKET -----------
+class FakeMarket {
+    constructor(startPrice = 100, volatility = 0.3) {
+        this.price = startPrice;
+        this.volatility = volatility;
+    }
+    tick() {
+        const change = (Math.random() * 2 - 1) * this.volatility;
+        this.price += change;
+        return parseFloat(this.price.toFixed(4));
+    }
+}
+
+// ----------- BOT -----------
+class TrendBot {
+    constructor(logFunc) {
+        this.position = 0;
+        this.entryPrice = null;
+        this.cash = 0;
+        this.log = logFunc;
+    }
+
+    portfolioValue(currentPrice) {
+        return this.cash + (this.position === 1 ? currentPrice : 0);
+    }
+
+    update(price, prev) {
+        if (price > prev) {
+            if (this.position === 0) {
+                this.position = 1;
+                this.entryPrice = price;
+                this.log(`BUY  @ ${price}`);
+            }
+        } else if (price < prev) {
+            if (this.position === 1) {
+                this.position = 0;
+                const profit = price - this.entryPrice;
+                this.cash += profit;
+                this.log(`SELL @ ${price} | Profit: ${profit.toFixed(4)} | Total: ${this.cash.toFixed(4)}`);
+            }
+        }
+    }
+}
+
+// ----------- DRAWING -----------
+const canvas = document.getElementById("chart");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth - 40;
+canvas.height = 350;
+
+let prices = [];
+let portfolios = [];
+
+function drawLine(data, color, max, min) {
+    const range = max - min || 1;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+
+    data.forEach((v, i) => {
+        let x = (i / (data.length - 1)) * canvas.width;
+        let y = canvas.height - ((v - min) / range) * canvas.height;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    });
+
+    ctx.stroke();
+}
+
+function drawLabels(currentPrice, currentPortfolio) {
+    ctx.fillStyle = "#0f0";
+    ctx.font = "16px Arial";
+    ctx.fillText("Stock: " + currentPrice.toFixed(4), 10, 20);
+
+    ctx.fillStyle = "#4ab3ff";
+    ctx.fillText("Portfolio: " + currentPortfolio.toFixed(4), 10, 40);
+}
+
+function drawChart() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (prices.length < 2) return;
+
+    const all = prices.concat(portfolios);
+    const max = Math.max(...all);
+    const min = Math.min(...all);
+
+    drawLine(prices, "#00ff88", max, min);     // green stock price
+    drawLine(portfolios, "#4ab3ff", max, min); // blue portfolio
+
+    drawLabels(prices[prices.length - 1], portfolios[portfolios.length - 1]);
+}
+
+// ----------- LOGGING -----------
+function log(msg) {
+    const box = document.getElementById("log");
+    box.textContent += msg + "\n";
+    box.scrollTop = box.scrollHeight;
+}
+
+// ----------- MAIN LOOP -----------
+const market = new FakeMarket();
+const bot = new TrendBot(log);
+
+let previousPrice = market.price;
+prices.push(previousPrice);
+portfolios.push(bot.portfolioValue(previousPrice));
+drawChart();
+
+setInterval(() => {
+    const price = market.tick();
+    prices.push(price);
+    portfolios.push(bot.portfolioValue(price));
+
+    if (prices.length > 500) prices.shift();
+    if (portfolios.length > 500) portfolios.shift();
+
+    bot.update(price, previousPrice);
+
+    previousPrice = price;
+
+    drawChart();
+}, 150);
+</script>
+
+</body>
+</html>
+
 
 <!DOCTYPE html>
 <html>
