@@ -4,69 +4,37 @@
   <meta charset="UTF-8" />
   <title>Momentum Trading Bot Simulator</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Plotly for charts (CDN) -->
   <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
   <style>
     :root {
-      --bg: #0f172a;
-      --panel: #111827;
-      --text: #e5e7eb;
-      --muted: #9ca3af;
-      --accent: #60a5fa;
-      --accent2: #34d399;
-      --warn: #f59e0b;
-      --danger: #ef4444;
+      --bg: #0f172a; --panel: #111827; --text: #e5e7eb; --muted: #9ca3af;
+      --accent: #60a5fa; --accent2: #34d399; --warn: #f59e0b; --danger: #ef4444;
     }
-    body {
-      margin: 0; background: var(--bg); color: var(--text);
-      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-    }
-    header {
-      padding: 16px 20px; border-bottom: 1px solid #1f2937;
-    }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial; }
+    header { padding: 16px 20px; border-bottom: 1px solid #1f2937; }
     h1 { margin: 0 0 6px; font-size: 20px; }
     .sub { color: var(--muted); font-size: 13px; }
-    .wrap {
-      display: grid; grid-template-columns: 340px 1fr; gap: 14px; padding: 14px;
-    }
-    .panel {
-      background: var(--panel); border: 1px solid #1f2937; border-radius: 10px; padding: 14px;
-    }
+    .wrap { display: grid; grid-template-columns: 360px 1fr; gap: 14px; padding: 14px; }
+    .panel { background: var(--panel); border: 1px solid #1f2937; border-radius: 10px; padding: 14px; }
     .panel h2 { font-size: 16px; margin: 0 0 10px; color: var(--muted); }
-    .grid2 {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-    }
-    .grid3 {
-      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
-    }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
     label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; }
-    input, select {
-      width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid #374151;
-      background: #0b1220; color: var(--text);
-    }
+    input, select { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid #374151; background: #0b1220; color: var(--text); }
     .row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
-    button {
-      padding: 8px 12px; border-radius: 8px; border: 1px solid #2563eb; background: #1d4ed8; color: #fff;
-      cursor: pointer; font-weight: 600;
-    }
+    button { padding: 8px 12px; border-radius: 8px; border: 1px solid #2563eb; background: #1d4ed8; color: #fff; cursor: pointer; font-weight: 600; }
     button.secondary { border-color: #374151; background: #1f2937; }
-    .stat {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px;
-    }
-    .stat .box {
-      background: #0b1220; border: 1px solid #1f2937; border-radius: 8px; padding: 10px;
-    }
+    .stat { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+    .stat .box { background: #0b1220; border: 1px solid #1f2937; border-radius: 8px; padding: 10px; }
     .box .k { color: var(--muted); font-size: 12px; }
     .box .v { font-size: 16px; margin-top: 4px; }
     .charts { display: grid; grid-template-rows: 1fr 1fr; gap: 12px; min-height: 70vh; }
     .chart { height: 100%; min-height: 320px; }
-    .footer {
-      padding: 10px 14px; color: var(--muted); font-size: 12px; text-align: right;
-      border-top: 1px solid #1f2937;
-    }
-    .legend {
-      font-size: 12px; color: var(--muted); margin-top: 6px;
-    }
+    .footer { padding: 10px 14px; color: var(--muted); font-size: 12px; text-align: right; border-top: 1px solid #1f2937; }
+    .legend { font-size: 12px; color: var(--muted); margin-top: 6px; }
+    .errors { margin-top: 10px; background: #1f2937; border: 1px solid #374151; border-radius: 8px; padding: 10px; }
+    .errors h3 { margin: 0 0 6px; font-size: 13px; color: var(--danger); }
+    .errors pre { margin: 0; white-space: pre-wrap; font-size: 12px; color: #fca5a5; }
   </style>
 </head>
 <body>
@@ -153,8 +121,8 @@
       </div>
 
       <div class="row" style="margin-top:12px">
-        <button id="runBtn">Run simulation</button>
-        <button id="resetBtn" class="secondary">Reset params</button>
+        <button id="runBtn" type="button">Run simulation</button>
+        <button id="resetBtn" type="button" class="secondary">Reset params</button>
       </div>
 
       <div class="legend">
@@ -171,6 +139,11 @@
           <div class="v" id="total_trades">0</div>
         </div>
       </div>
+
+      <div class="errors" id="errors" style="display:none">
+        <h3>Errors</h3>
+        <pre id="errorsText"></pre>
+      </div>
     </div>
 
     <div class="panel">
@@ -182,12 +155,25 @@
     </div>
   </div>
 
-  <div class="footer">
-    Simulated strategy for educational purposes only.
-  </div>
+  <div class="footer">Simulated strategy for educational purposes only.</div>
 
   <script>
-    // Utility: PRNG with seed
+    // Error box helpers
+    function showError(msg) {
+      const box = document.getElementById('errors');
+      const pre = document.getElementById('errorsText');
+      box.style.display = 'block';
+      pre.textContent = msg;
+      console.error(msg);
+    }
+    function clearError() {
+      const box = document.getElementById('errors');
+      const pre = document.getElementById('errorsText');
+      box.style.display = 'none';
+      pre.textContent = '';
+    }
+
+    // Seeded PRNG (Mulberry32) and normal via Box-Muller
     function mulberry32(a) {
       return function() {
         var t = a += 0x6D2B79F5;
@@ -197,7 +183,7 @@
       }
     }
     function normalPRNG(seed) {
-      const rand = mulberry32(seed);
+      const rand = mulberry32(seed >>> 0);
       let spare = null;
       return function() {
         if (spare !== null) { const v = spare; spare = null; return v; }
@@ -212,8 +198,50 @@
       }
     }
 
-    function fmtUSD(x) {
-      return '$' + (Math.round(x * 100) / 100).toLocaleString();
+    function fmtUSD(x) { return '$' + (Math.round(x * 100) / 100).toLocaleString(); }
+
+    function validateNumber(value, name, {min = -Infinity, max = Infinity, allowNaN = false} = {}) {
+      if (!allowNaN && (value === null || Number.isNaN(value))) throw new Error(`${name} is invalid or empty`);
+      if (value < min) throw new Error(`${name} must be >= ${min}`);
+      if (value > max) throw new Error(`${name} must be <= ${max}`);
+      return value;
+    }
+
+    function readParams() {
+      const n_steps = parseInt(document.getElementById('n_steps').value);
+      const seed = parseInt(document.getElementById('seed').value);
+      const start_price = parseFloat(document.getElementById('start_price').value);
+      const drift = parseFloat(document.getElementById('drift').value);
+      const volatility = parseFloat(document.getElementById('vol').value);
+      const up_threshold = parseFloat(document.getElementById('up_threshold').value);
+      const down_threshold = parseFloat(document.getElementById('down_threshold').value);
+      const t_cost_bps = parseFloat(document.getElementById('t_cost_bps').value);
+      const trade_qty_mode = document.getElementById('qty_mode').value;
+      const trade_qty = parseFloat(document.getElementById('trade_qty').value);
+      const max_position = parseInt(document.getElementById('max_position').value);
+      const initial_cash = parseFloat(document.getElementById('initial_cash').value);
+      const allow_short = document.getElementById('allow_short').value === 'true';
+
+      // Validate
+      validateNumber(n_steps, 'Steps', {min: 2});
+      validateNumber(seed, 'Seed', {min: 0});
+      validateNumber(start_price, 'Start price', {min: 0.0001});
+      validateNumber(drift, 'Drift per step');
+      validateNumber(volatility, 'Volatility per step', {min: 0});
+      validateNumber(up_threshold, 'Up threshold', {min: 0});
+      validateNumber(down_threshold, 'Down threshold', {min: 0});
+      validateNumber(t_cost_bps, 'Transaction cost (bps)', {min: 0});
+      validateNumber(trade_qty, 'Trade qty', {min: 0});
+      validateNumber(max_position, 'Max position', {min: 0});
+      validateNumber(initial_cash, 'Initial cash', {min: 0});
+
+      return {
+        n_steps, seed, start_price, drift, volatility,
+        up_threshold, down_threshold,
+        trade_qty_mode, trade_qty,
+        max_position, transaction_cost: t_cost_bps / 10000,
+        initial_cash, allow_short
+      };
     }
 
     function runSimulation(params) {
@@ -251,29 +279,25 @@
         if (pct_change > up_threshold) action = +1;
         else if (pct_change < -down_threshold) action = -1;
 
-        let qty_effective = 0;
-
         if (action !== 0) {
-          let qty;
+          let qty = 0;
           if (trade_qty_mode === 'shares') {
             qty = trade_qty * action;
           } else if (trade_qty_mode === 'cash_fraction') {
-            if (action > 0) {
-              qty = Math.floor((cash * trade_qty) / price);
-            } else {
-              // symmetric for sells; will be limited by position or short cap
-              qty = Math.floor((initial_cash * trade_qty) / price) * action;
-            }
+            if (action > 0) qty = Math.floor((cash * trade_qty) / price);
+            else qty = Math.floor((initial_cash * trade_qty) / price) * action;
           } else {
-            throw new Error("trade_qty_mode must be 'shares' or 'cash_fraction'");
+            throw new Error("Trade qty mode must be 'shares' or 'cash_fraction'");
           }
 
+          // Position limits
           let target_position = position + qty;
           if (!allow_short) target_position = Math.max(0, target_position);
           const minPos = allow_short ? -max_position : 0;
           target_position = Math.min(max_position, Math.max(minPos, target_position));
-          qty_effective = target_position - position;
+          let qty_effective = target_position - position;
 
+          // Fees and cash check
           const notional = Math.abs(qty_effective) * price;
           let fees = transaction_cost * notional;
 
@@ -289,17 +313,13 @@
 
           if (qty_effective !== 0) {
             position += qty_effective;
-            cash -= qty_effective * price; // buy reduces cash; sell increases cash
-            cash -= transaction_cost * Math.abs(qty_effective * price); // fees
+            cash -= qty_effective * price;
+            cash -= transaction_cost * Math.abs(qty_effective * price);
 
             if (qty_effective > 0) {
-              buyTimes.push(t);
-              buyPrices.push(price);
-              signals[t] = +1;
+              buyTimes.push(t); buyPrices.push(price); signals[t] = +1;
             } else {
-              sellTimes.push(t);
-              sellPrices.push(price);
-              signals[t] = -1;
+              sellTimes.push(t); sellPrices.push(price); signals[t] = -1;
             }
           }
         }
@@ -317,76 +337,28 @@
 
     function plotAll(sim, params) {
       const t = [...Array(params.n_steps).keys()];
-      const priceTrace = {
-        x: t, y: sim.prices, type: 'scatter', mode: 'lines',
-        name: 'Price', line: { color: '#60a5fa', width: 2 }
-      };
-      const buyTrace = {
-        x: sim.buys.times, y: sim.buys.prices, type: 'scatter', mode: 'markers',
-        name: 'Buy', marker: { color: '#34d399', symbol: 'triangle-up', size: 10 }
-      };
-      const sellTrace = {
-        x: sim.sells.times, y: sim.sells.prices, type: 'scatter', mode: 'markers',
-        name: 'Sell', marker: { color: '#ef4444', symbol: 'triangle-down', size: 10 }
-      };
-      const posTrace = {
-        x: t, y: sim.positions, type: 'scatter', mode: 'lines',
-        name: 'Position (shares)', yaxis: 'y2', line: { color: '#f59e0b', width: 1, dash: 'dot' },
-        hovertemplate: 't=%{x}<br>pos=%{y}<extra></extra>'
-      };
+      const priceTrace = { x: t, y: sim.prices, type: 'scatter', mode: 'lines', name: 'Price', line: { color: '#60a5fa', width: 2 } };
+      const buyTrace = { x: sim.buys.times, y: sim.buys.prices, type: 'scatter', mode: 'markers', name: 'Buy', marker: { color: '#34d399', symbol: 'triangle-up', size: 10 } };
+      const sellTrace = { x: sim.sells.times, y: sim.sells.prices, type: 'scatter', mode: 'markers', name: 'Sell', marker: { color: '#ef4444', symbol: 'triangle-down', size: 10 } };
+      const posTrace = { x: t, y: sim.positions, type: 'scatter', mode: 'lines', name: 'Position (shares)', yaxis: 'y2', line: { color: '#f59e0b', width: 1, dash: 'dot' }, hovertemplate: 't=%{x}<br>pos=%{y}<extra></extra>' };
 
       const layoutPrice = {
-        plot_bgcolor: '#0b1220', paper_bgcolor: '#111827',
-        font: { color: '#e5e7eb' },
-        legend: { orientation: 'h' },
-        margin: { l: 40, r: 20, t: 10, b: 30 },
-        xaxis: { title: 'Step', gridcolor: '#1f2937' },
-        yaxis: { title: 'Price', gridcolor: '#1f2937' },
-        yaxis2: { overlaying: 'y', side: 'right', showgrid: false, title: 'Position' }
+        plot_bgcolor: '#0b1220', paper_bgcolor: '#111827', font: { color: '#e5e7eb' }, legend: { orientation: 'h' },
+        margin: { l: 40, r: 20, t: 10, b: 30 }, xaxis: { title: 'Step', gridcolor: '#1f2937' },
+        yaxis: { title: 'Price', gridcolor: '#1f2937' }, yaxis2: { overlaying: 'y', side: 'right', showgrid: false, title: 'Position' }
       };
-
       Plotly.newPlot('priceChart', [priceTrace, buyTrace, sellTrace, posTrace], layoutPrice, {displayModeBar: false});
 
-      const pvTrace = {
-        x: t, y: sim.portfolio_values, type: 'scatter', mode: 'lines',
-        name: 'Portfolio value', line: { color: '#a78bfa', width: 2 }
-      };
+      const pvTrace = { x: t, y: sim.portfolio_values, type: 'scatter', mode: 'lines', name: 'Portfolio value', line: { color: '#a78bfa', width: 2 } };
       const layoutPV = {
-        plot_bgcolor: '#0b1220', paper_bgcolor: '#111827',
-        font: { color: '#e5e7eb' },
-        legend: { orientation: 'h' },
-        margin: { l: 40, r: 20, t: 10, b: 30 },
-        xaxis: { title: 'Step', gridcolor: '#1f2937' },
+        plot_bgcolor: '#0b1220', paper_bgcolor: '#111827', font: { color: '#e5e7eb' }, legend: { orientation: 'h' },
+        margin: { l: 40, r: 20, t: 10, b: 30 }, xaxis: { title: 'Step', gridcolor: '#1f2937' },
         yaxis: { title: 'Portfolio value', gridcolor: '#1f2937' }
       };
       Plotly.newPlot('portfolioChart', [pvTrace], layoutPV, {displayModeBar: false});
 
       document.getElementById('final_pv').textContent = fmtUSD(sim.portfolio_values[sim.portfolio_values.length - 1]);
       document.getElementById('total_trades').textContent = (sim.buys.times.length + sim.sells.times.length).toString();
-    }
-
-    function readParams() {
-      const n_steps = parseInt(document.getElementById('n_steps').value);
-      const seed = parseInt(document.getElementById('seed').value);
-      const start_price = parseFloat(document.getElementById('start_price').value);
-      const drift = parseFloat(document.getElementById('drift').value);
-      const volatility = parseFloat(document.getElementById('vol').value);
-      const up_threshold = parseFloat(document.getElementById('up_threshold').value);
-      const down_threshold = parseFloat(document.getElementById('down_threshold').value);
-      const t_cost_bps = parseFloat(document.getElementById('t_cost_bps').value);
-      const trade_qty_mode = document.getElementById('qty_mode').value;
-      const trade_qty = parseFloat(document.getElementById('trade_qty').value);
-      const max_position = parseInt(document.getElementById('max_position').value);
-      const initial_cash = parseFloat(document.getElementById('initial_cash').value);
-      const allow_short = document.getElementById('allow_short').value === 'true';
-
-      return {
-        n_steps, seed, start_price, drift, volatility,
-        up_threshold, down_threshold,
-        trade_qty_mode, trade_qty,
-        max_position, transaction_cost: t_cost_bps / 10000,
-        initial_cash, allow_short
-      };
     }
 
     function resetParams() {
@@ -403,23 +375,41 @@
       document.getElementById('max_position').value = 1000;
       document.getElementById('initial_cash').value = 100000;
       document.getElementById('allow_short').value = 'false';
+      clearError();
     }
 
+    // Wire up buttons safely
     document.getElementById('runBtn').addEventListener('click', () => {
-      const params = readParams();
-      const sim = runSimulation(params);
-      plotAll(sim, params);
+      try {
+        clearError();
+        const params = readParams();
+        const sim = runSimulation(params);
+        plotAll(sim, params);
+      } catch (e) {
+        showError(e.message || String(e));
+      }
     });
 
     document.getElementById('resetBtn').addEventListener('click', () => {
       resetParams();
+      try {
+        const params = readParams();
+        const sim = runSimulation(params);
+        plotAll(sim, params);
+      } catch (e) {
+        showError(e.message || String(e));
+      }
     });
 
-    // Run once on load
+    // Initial plot
     (function init() {
-      const params = readParams();
-      const sim = runSimulation(params);
-      plotAll(sim, params);
+      try {
+        const params = readParams();
+        const sim = runSimulation(params);
+        plotAll(sim, params);
+      } catch (e) {
+        showError(e.message || String(e));
+      }
     })();
   </script>
 </body>
