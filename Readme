@@ -1,416 +1,106 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Momentum Trading Bot Simulator</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+  <meta charset="UTF-8">
+  <title>Fake Market Bot (No Imports)</title>
   <style>
-    :root {
-      --bg: #0f172a; --panel: #111827; --text: #e5e7eb; --muted: #9ca3af;
-      --accent: #60a5fa; --accent2: #34d399; --warn: #f59e0b; --danger: #ef4444;
-    }
-    body { margin: 0; background: var(--bg); color: var(--text); font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial; }
-    header { padding: 16px 20px; border-bottom: 1px solid #1f2937; }
-    h1 { margin: 0 0 6px; font-size: 20px; }
-    .sub { color: var(--muted); font-size: 13px; }
-    .wrap { display: grid; grid-template-columns: 360px 1fr; gap: 14px; padding: 14px; }
-    .panel { background: var(--panel); border: 1px solid #1f2937; border-radius: 10px; padding: 14px; }
-    .panel h2 { font-size: 16px; margin: 0 0 10px; color: var(--muted); }
-    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-    label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; }
-    input, select { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid #374151; background: #0b1220; color: var(--text); }
-    .row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
-    button { padding: 8px 12px; border-radius: 8px; border: 1px solid #2563eb; background: #1d4ed8; color: #fff; cursor: pointer; font-weight: 600; }
-    button.secondary { border-color: #374151; background: #1f2937; }
-    .stat { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-    .stat .box { background: #0b1220; border: 1px solid #1f2937; border-radius: 8px; padding: 10px; }
-    .box .k { color: var(--muted); font-size: 12px; }
-    .box .v { font-size: 16px; margin-top: 4px; }
-    .charts { display: grid; grid-template-rows: 1fr 1fr; gap: 12px; min-height: 70vh; }
-    .chart { height: 100%; min-height: 320px; }
-    .footer { padding: 10px 14px; color: var(--muted); font-size: 12px; text-align: right; border-top: 1px solid #1f2937; }
-    .legend { font-size: 12px; color: var(--muted); margin-top: 6px; }
-    .errors { margin-top: 10px; background: #1f2937; border: 1px solid #374151; border-radius: 8px; padding: 10px; }
-    .errors h3 { margin: 0 0 6px; font-size: 13px; color: var(--danger); }
-    .errors pre { margin: 0; white-space: pre-wrap; font-size: 12px; color: #fca5a5; }
+    body { font-family: sans-serif; background:#111; color:#eee; }
+    canvas { background:#222; margin:10px 0; border:1px solid #555; }
+    button { padding:8px 12px; margin:10px 0; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Momentum Trading Bot Simulator</h1>
-    <div class="sub">Buy on up moves, sell on down moves — with a fake stock and live charts.</div>
-  </header>
+  <h2>Fake Market Trading Bot</h2>
+  <button onclick="simulate()">Run Simulation</button>
+  <p id="stats"></p>
+  <canvas id="priceChart" width="800" height="300"></canvas>
+  <canvas id="portfolioChart" width="800" height="300"></canvas>
 
-  <div class="wrap">
-    <div class="panel">
-      <h2>Parameters</h2>
+<script>
+function simulate() {
+  const steps = 200;
+  const startPrice = 100;
+  const drift = 0.0005;
+  const vol = 0.02;
+  const upThreshold = 0.005;
+  const downThreshold = 0.005;
+  const tradeQty = 10;
+  let prices = [startPrice];
+  let cash = 10000;
+  let position = 0;
+  let portfolio = [cash];
+  let buys=[], sells=[];
 
-      <div class="grid2">
-        <div>
-          <label>Steps</label>
-          <input type="number" id="n_steps" value="500" min="50" max="5000" step="50" />
-        </div>
-        <div>
-          <label>Seed</label>
-          <input type="number" id="seed" value="42" min="0" />
-        </div>
-      </div>
+  // generate fake prices
+  for (let t=1; t<steps; t++) {
+    const ret = drift + vol*(Math.random()*2-1); // random walk
+    prices[t] = prices[t-1]*(1+ret);
 
-      <div class="grid3" style="margin-top:10px">
-        <div>
-          <label>Start price</label>
-          <input type="number" id="start_price" value="100" step="1" min="1" />
-        </div>
-        <div>
-          <label>Drift per step</label>
-          <input type="number" id="drift" value="0.0005" step="0.0001" />
-        </div>
-        <div>
-          <label>Volatility per step</label>
-          <input type="number" id="vol" value="0.02" step="0.001" />
-        </div>
-      </div>
-
-      <div class="grid3" style="margin-top:10px">
-        <div>
-          <label>Up threshold (buy)</label>
-          <input type="number" id="up_threshold" value="0.005" step="0.0005" />
-        </div>
-        <div>
-          <label>Down threshold (sell)</label>
-          <input type="number" id="down_threshold" value="0.005" step="0.0005" />
-        </div>
-        <div>
-          <label>Transaction cost (bps)</label>
-          <input type="number" id="t_cost_bps" value="5" step="1" />
-        </div>
-      </div>
-
-      <div class="grid2" style="margin-top:10px">
-        <div>
-          <label>Trade qty mode</label>
-          <select id="qty_mode">
-            <option value="shares" selected>shares (fixed shares per trade)</option>
-            <option value="cash_fraction">cash_fraction (fraction of cash)</option>
-          </select>
-        </div>
-        <div>
-          <label>Trade qty</label>
-          <input type="number" id="trade_qty" value="10" step="1" />
-        </div>
-      </div>
-
-      <div class="grid3" style="margin-top:10px">
-        <div>
-          <label>Max position (shares)</label>
-          <input type="number" id="max_position" value="1000" step="10" />
-        </div>
-        <div>
-          <label>Initial cash</label>
-          <input type="number" id="initial_cash" value="100000" step="1000" />
-        </div>
-        <div>
-          <label>Allow short</label>
-          <select id="allow_short">
-            <option value="false" selected>false</option>
-            <option value="true">true</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="row" style="margin-top:12px">
-        <button id="runBtn" type="button">Run simulation</button>
-        <button id="resetBtn" type="button" class="secondary">Reset params</button>
-      </div>
-
-      <div class="legend">
-        Buy marker: green triangle-up; Sell marker: red triangle-down. Portfolio is mark-to-market value.
-      </div>
-
-      <div class="stat">
-        <div class="box">
-          <div class="k">Final portfolio value</div>
-          <div class="v" id="final_pv">$0</div>
-        </div>
-        <div class="box">
-          <div class="k">Total trades</div>
-          <div class="v" id="total_trades">0</div>
-        </div>
-      </div>
-
-      <div class="errors" id="errors" style="display:none">
-        <h3>Errors</h3>
-        <pre id="errorsText"></pre>
-      </div>
-    </div>
-
-    <div class="panel">
-      <h2>Charts</h2>
-      <div class="charts">
-        <div id="priceChart" class="chart"></div>
-        <div id="portfolioChart" class="chart"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="footer">Simulated strategy for educational purposes only.</div>
-
-  <script>
-    // Error box helpers
-    function showError(msg) {
-      const box = document.getElementById('errors');
-      const pre = document.getElementById('errorsText');
-      box.style.display = 'block';
-      pre.textContent = msg;
-      console.error(msg);
+    const pctChange = (prices[t]-prices[t-1])/prices[t-1];
+    if (pctChange>upThreshold) {
+      // buy
+      cash -= tradeQty*prices[t];
+      position += tradeQty;
+      buys.push({t,price:prices[t]});
+    } else if (pctChange<-downThreshold && position>=tradeQty) {
+      // sell
+      cash += tradeQty*prices[t];
+      position -= tradeQty;
+      sells.push({t,price:prices[t]});
     }
-    function clearError() {
-      const box = document.getElementById('errors');
-      const pre = document.getElementById('errorsText');
-      box.style.display = 'none';
-      pre.textContent = '';
-    }
+    portfolio[t] = cash+position*prices[t];
+  }
 
-    // Seeded PRNG (Mulberry32) and normal via Box-Muller
-    function mulberry32(a) {
-      return function() {
-        var t = a += 0x6D2B79F5;
-        t = Math.imul(t ^ (t >>> 15), t | 1);
-        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-      }
-    }
-    function normalPRNG(seed) {
-      const rand = mulberry32(seed >>> 0);
-      let spare = null;
-      return function() {
-        if (spare !== null) { const v = spare; spare = null; return v; }
-        let u = 0, v = 0;
-        while (u === 0) u = rand();
-        while (v === 0) v = rand();
-        const mag = Math.sqrt(-2.0 * Math.log(u));
-        const z0 = mag * Math.cos(2 * Math.PI * v);
-        const z1 = mag * Math.sin(2 * Math.PI * v);
-        spare = z1;
-        return z0;
-      }
-    }
+  document.getElementById("stats").textContent =
+    "Final portfolio: $"+portfolio[portfolio.length-1].toFixed(2)+
+    " | Trades: "+(buys.length+sells.length);
 
-    function fmtUSD(x) { return '$' + (Math.round(x * 100) / 100).toLocaleString(); }
+  drawLineChart("priceChart", prices, buys, sells, "Price");
+  drawLineChart("portfolioChart", portfolio, [], [], "Portfolio Value");
+}
 
-    function validateNumber(value, name, {min = -Infinity, max = Infinity, allowNaN = false} = {}) {
-      if (!allowNaN && (value === null || Number.isNaN(value))) throw new Error(`${name} is invalid or empty`);
-      if (value < min) throw new Error(`${name} must be >= ${min}`);
-      if (value > max) throw new Error(`${name} must be <= ${max}`);
-      return value;
-    }
+function drawLineChart(canvasId, data, buys, sells, label) {
+  const canvas=document.getElementById(canvasId);
+  const ctx=canvas.getContext("2d");
+  ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    function readParams() {
-      const n_steps = parseInt(document.getElementById('n_steps').value);
-      const seed = parseInt(document.getElementById('seed').value);
-      const start_price = parseFloat(document.getElementById('start_price').value);
-      const drift = parseFloat(document.getElementById('drift').value);
-      const volatility = parseFloat(document.getElementById('vol').value);
-      const up_threshold = parseFloat(document.getElementById('up_threshold').value);
-      const down_threshold = parseFloat(document.getElementById('down_threshold').value);
-      const t_cost_bps = parseFloat(document.getElementById('t_cost_bps').value);
-      const trade_qty_mode = document.getElementById('qty_mode').value;
-      const trade_qty = parseFloat(document.getElementById('trade_qty').value);
-      const max_position = parseInt(document.getElementById('max_position').value);
-      const initial_cash = parseFloat(document.getElementById('initial_cash').value);
-      const allow_short = document.getElementById('allow_short').value === 'true';
+  const w=canvas.width, h=canvas.height;
+  const max=Math.max(...data), min=Math.min(...data);
+  const scaleY=y=>h-(y-min)/(max-min)*h;
 
-      // Validate
-      validateNumber(n_steps, 'Steps', {min: 2});
-      validateNumber(seed, 'Seed', {min: 0});
-      validateNumber(start_price, 'Start price', {min: 0.0001});
-      validateNumber(drift, 'Drift per step');
-      validateNumber(volatility, 'Volatility per step', {min: 0});
-      validateNumber(up_threshold, 'Up threshold', {min: 0});
-      validateNumber(down_threshold, 'Down threshold', {min: 0});
-      validateNumber(t_cost_bps, 'Transaction cost (bps)', {min: 0});
-      validateNumber(trade_qty, 'Trade qty', {min: 0});
-      validateNumber(max_position, 'Max position', {min: 0});
-      validateNumber(initial_cash, 'Initial cash', {min: 0});
+  // axes
+  ctx.strokeStyle="#888"; ctx.beginPath();
+  ctx.moveTo(40,0); ctx.lineTo(40,h); ctx.lineTo(w,h);
+  ctx.stroke();
 
-      return {
-        n_steps, seed, start_price, drift, volatility,
-        up_threshold, down_threshold,
-        trade_qty_mode, trade_qty,
-        max_position, transaction_cost: t_cost_bps / 10000,
-        initial_cash, allow_short
-      };
-    }
+  // line
+  ctx.strokeStyle="#0f0"; ctx.beginPath();
+  for(let i=0;i<data.length;i++){
+    const x=40+i*(w-40)/data.length;
+    const y=scaleY(data[i]);
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
 
-    function runSimulation(params) {
-      const {
-        n_steps, start_price, drift, volatility,
-        up_threshold, down_threshold,
-        trade_qty_mode, trade_qty,
-        max_position, transaction_cost, initial_cash,
-        allow_short, seed
-      } = params;
+  // buys
+  ctx.fillStyle="lime";
+  buys.forEach(b=>{
+    const x=40+b.t*(w-40)/data.length;
+    const y=scaleY(b.price);
+    ctx.beginPath(); ctx.arc(x,y,4,0,2*Math.PI); ctx.fill();
+  });
 
-      const normal = normalPRNG(seed);
-      const prices = new Array(n_steps);
-      prices[0] = start_price;
-      for (let t = 1; t < n_steps; t++) {
-        const ret = drift + volatility * normal();
-        prices[t] = prices[t-1] * (1 + ret);
-      }
+  // sells
+  ctx.fillStyle="red";
+  sells.forEach(s=>{
+    const x=40+s.t*(w-40)/data.length;
+    const y=scaleY(s.price);
+    ctx.beginPath(); ctx.arc(x,y,4,0,2*Math.PI); ctx.fill();
+  });
 
-      let cash = initial_cash;
-      let position = 0;
-      const portfolio_values = new Array(n_steps);
-      const positions = new Array(n_steps);
-      const signals = new Array(n_steps).fill(0);
-
-      const buyTimes = [], buyPrices = [];
-      const sellTimes = [], sellPrices = [];
-
-      for (let t = 0; t < n_steps; t++) {
-        const price = prices[t];
-        const prev = t === 0 ? price : prices[t-1];
-        const pct_change = (price - prev) / prev;
-
-        let action = 0;
-        if (pct_change > up_threshold) action = +1;
-        else if (pct_change < -down_threshold) action = -1;
-
-        if (action !== 0) {
-          let qty = 0;
-          if (trade_qty_mode === 'shares') {
-            qty = trade_qty * action;
-          } else if (trade_qty_mode === 'cash_fraction') {
-            if (action > 0) qty = Math.floor((cash * trade_qty) / price);
-            else qty = Math.floor((initial_cash * trade_qty) / price) * action;
-          } else {
-            throw new Error("Trade qty mode must be 'shares' or 'cash_fraction'");
-          }
-
-          // Position limits
-          let target_position = position + qty;
-          if (!allow_short) target_position = Math.max(0, target_position);
-          const minPos = allow_short ? -max_position : 0;
-          target_position = Math.min(max_position, Math.max(minPos, target_position));
-          let qty_effective = target_position - position;
-
-          // Fees and cash check
-          const notional = Math.abs(qty_effective) * price;
-          let fees = transaction_cost * notional;
-
-          if (qty_effective > 0) {
-            let cost = qty_effective * price + fees;
-            if (cost > cash) {
-              qty_effective = Math.floor(cash / (price * (1 + transaction_cost)));
-              const newNotional = Math.abs(qty_effective) * price;
-              fees = transaction_cost * newNotional;
-              cost = qty_effective * price + fees;
-            }
-          }
-
-          if (qty_effective !== 0) {
-            position += qty_effective;
-            cash -= qty_effective * price;
-            cash -= transaction_cost * Math.abs(qty_effective * price);
-
-            if (qty_effective > 0) {
-              buyTimes.push(t); buyPrices.push(price); signals[t] = +1;
-            } else {
-              sellTimes.push(t); sellPrices.push(price); signals[t] = -1;
-            }
-          }
-        }
-
-        portfolio_values[t] = cash + position * price;
-        positions[t] = position;
-      }
-
-      return {
-        prices, portfolio_values, positions, signals,
-        buys: { times: buyTimes, prices: buyPrices },
-        sells: { times: sellTimes, prices: sellPrices }
-      };
-    }
-
-    function plotAll(sim, params) {
-      const t = [...Array(params.n_steps).keys()];
-      const priceTrace = { x: t, y: sim.prices, type: 'scatter', mode: 'lines', name: 'Price', line: { color: '#60a5fa', width: 2 } };
-      const buyTrace = { x: sim.buys.times, y: sim.buys.prices, type: 'scatter', mode: 'markers', name: 'Buy', marker: { color: '#34d399', symbol: 'triangle-up', size: 10 } };
-      const sellTrace = { x: sim.sells.times, y: sim.sells.prices, type: 'scatter', mode: 'markers', name: 'Sell', marker: { color: '#ef4444', symbol: 'triangle-down', size: 10 } };
-      const posTrace = { x: t, y: sim.positions, type: 'scatter', mode: 'lines', name: 'Position (shares)', yaxis: 'y2', line: { color: '#f59e0b', width: 1, dash: 'dot' }, hovertemplate: 't=%{x}<br>pos=%{y}<extra></extra>' };
-
-      const layoutPrice = {
-        plot_bgcolor: '#0b1220', paper_bgcolor: '#111827', font: { color: '#e5e7eb' }, legend: { orientation: 'h' },
-        margin: { l: 40, r: 20, t: 10, b: 30 }, xaxis: { title: 'Step', gridcolor: '#1f2937' },
-        yaxis: { title: 'Price', gridcolor: '#1f2937' }, yaxis2: { overlaying: 'y', side: 'right', showgrid: false, title: 'Position' }
-      };
-      Plotly.newPlot('priceChart', [priceTrace, buyTrace, sellTrace, posTrace], layoutPrice, {displayModeBar: false});
-
-      const pvTrace = { x: t, y: sim.portfolio_values, type: 'scatter', mode: 'lines', name: 'Portfolio value', line: { color: '#a78bfa', width: 2 } };
-      const layoutPV = {
-        plot_bgcolor: '#0b1220', paper_bgcolor: '#111827', font: { color: '#e5e7eb' }, legend: { orientation: 'h' },
-        margin: { l: 40, r: 20, t: 10, b: 30 }, xaxis: { title: 'Step', gridcolor: '#1f2937' },
-        yaxis: { title: 'Portfolio value', gridcolor: '#1f2937' }
-      };
-      Plotly.newPlot('portfolioChart', [pvTrace], layoutPV, {displayModeBar: false});
-
-      document.getElementById('final_pv').textContent = fmtUSD(sim.portfolio_values[sim.portfolio_values.length - 1]);
-      document.getElementById('total_trades').textContent = (sim.buys.times.length + sim.sells.times.length).toString();
-    }
-
-    function resetParams() {
-      document.getElementById('n_steps').value = 500;
-      document.getElementById('seed').value = 42;
-      document.getElementById('start_price').value = 100;
-      document.getElementById('drift').value = 0.0005;
-      document.getElementById('vol').value = 0.02;
-      document.getElementById('up_threshold').value = 0.005;
-      document.getElementById('down_threshold').value = 0.005;
-      document.getElementById('t_cost_bps').value = 5;
-      document.getElementById('qty_mode').value = 'shares';
-      document.getElementById('trade_qty').value = 10;
-      document.getElementById('max_position').value = 1000;
-      document.getElementById('initial_cash').value = 100000;
-      document.getElementById('allow_short').value = 'false';
-      clearError();
-    }
-
-    // Wire up buttons safely
-    document.getElementById('runBtn').addEventListener('click', () => {
-      try {
-        clearError();
-        const params = readParams();
-        const sim = runSimulation(params);
-        plotAll(sim, params);
-      } catch (e) {
-        showError(e.message || String(e));
-      }
-    });
-
-    document.getElementById('resetBtn').addEventListener('click', () => {
-      resetParams();
-      try {
-        const params = readParams();
-        const sim = runSimulation(params);
-        plotAll(sim, params);
-      } catch (e) {
-        showError(e.message || String(e));
-      }
-    });
-
-    // Initial plot
-    (function init() {
-      try {
-        const params = readParams();
-        const sim = runSimulation(params);
-        plotAll(sim, params);
-      } catch (e) {
-        showError(e.message || String(e));
-      }
-    })();
-  </script>
+  // label
+  ctx.fillStyle="#eee"; ctx.fillText(label,10,15);
+}
+</script>
 </body>
 </html>
